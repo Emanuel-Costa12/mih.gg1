@@ -20,7 +20,7 @@ async function connectDB() {
   const client = new MongoClient(MONGO_URL);
   await client.connect();
   db = client.db('mihgg');
-  console.log('MongoDB conectado!');
+  console.log('MongoDB conectado em:', MONGO_URL.substring(0, 30));
   await seedDB();
 }
 
