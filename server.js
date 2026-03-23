@@ -127,8 +127,12 @@ app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'adm
 
 app.use((err, req, res, next) => { console.error(err.message); res.status(500).json({ error: err.message }); });
 
-connectDB().then(() => { app.listen(PORT, () => {
-  console.log(`MIH.GG rodando em http://localhost:${PORT}`);
-  console.log(`Login: Mih / 1234`);
-}).catch(err => { console.error('Erro ao iniciar servidor:', err); });
-}).catch(err => { console.error('Erro MongoDB:', err.message); process.exit(1); });
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`MIH.GG rodando em http://localhost:${PORT}`);
+    console.log(`Login: Mih / 1234`);
+  });
+}).catch(err => {
+  console.error('Erro MongoDB:', err.message);
+  process.exit(1);
+});
