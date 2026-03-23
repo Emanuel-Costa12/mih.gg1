@@ -4,6 +4,7 @@ const cors = require('cors');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const { MongoClient } = require('mongodb');
+const { createClient } = require('redis');
 const path = require('path');
 const fs = require('fs');
 
@@ -17,6 +18,10 @@ const MONGO_URL = process.env.MONGO_URL;
 if (!MONGO_URL) { console.error('ERRO: MONGO_URL não configurada!'); process.exit(1); }
 
 let db;
+
+const redisClient = createClient({ url: process.env.REDIS_URL });
+redisClient.on('error', (err) => console.error('Redis error:', err));
+redisClient.connect().then(() => console.log('Redis conectado')).catch((err) => console.error('Redis falhou ao conectar:', err));
 
 async function connectDB() {
   const client = new MongoClient(MONGO_URL);
@@ -116,6 +121,18 @@ app.post('/api/posts/:id/like', authMiddleware, async (req, res) => { const post
 app.post('/api/posts/:id/comment', authMiddleware, async (req, res) => { const { text } = req.body; if (!text?.trim()) return res.status(400).json({ error: 'Comentário vazio' }); const user = await db.collection('users').findOne({ id: req.user.id }); const comment = { id: uuidv4(), userId: req.user.id, username: user.profile?.displayName || user.username, color: user.profile?.color, nameEffect: user.profile?.nameEffect, avatar: user.profile?.avatar, badges: user.profile?.badges, text: text.trim().substring(0, 500), createdAt: new Date().toISOString() }; await db.collection('posts').updateOne({ id: req.params.id }, { $push: { comments: comment } }); res.status(201).json(comment); });
 
 app.delete('/api/posts/:postId/comment/:commentId', authMiddleware, async (req, res) => { const post = await db.collection('posts').findOne({ id: req.params.postId }); if (!post) return res.status(404).json({ error: 'Não encontrado' }); const comment = (post.comments || []).find(c => c.id === req.params.commentId); if (!comment) return res.status(404).json({ error: 'Comentário não encontrado' }); if (comment.userId !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: 'Não autorizado' }); await db.collection('posts').updateOne({ id: req.params.postId }, { $pull: { comments: { id: req.params.commentId } } }); res.json({ message: 'Removido' }); });
+
+app.delete('/api/admin/redis/:key', adminMiddleware, async (req, res) => {
+  const { key } = req.params;
+  try {
+    const deleted = await redisClient.del(key);
+    if (deleted === 0) return res.status(404).json({ error: `Chave "${key}" não encontrada no Redis` });
+    res.json({ message: `Chave "${key}" deletada com sucesso` });
+  } catch (err) {
+    console.error('Erro ao deletar chave Redis:', err);
+    res.status(500).json({ error: 'Erro ao conectar ao Redis' });
+  }
+});
 
 app.get('/api/schedule', async (req, res) => { const s = await db.collection('schedule').find({}).sort({ day: 1 }).toArray(); res.json(s.map(({ _id, ...x }) => x)); });
 
