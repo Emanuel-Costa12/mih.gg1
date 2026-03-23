@@ -711,7 +711,7 @@ async function loadUsers() {
         <td><span class="role-badge ${u.role==='admin'?'role-admin':'role-viewer'}">${u.role}</span></td>
         <td style="color:var(--text2);font-size:12px">${fmtDate(u.createdAt)}</td>
         <td>${u.role!=='admin'?`
-  <button class="action-btn" onclick="promoteUser('${u.id}')">Promover Admin</button>
+  <button class="action-btn" onclick="promoteUser('${u.id}','${u.role}')">${u.role==='admin'?'Tirar Admin':'Promover Admin'}</button>
   <button class="action-btn danger" onclick="deleteUser('${u.id}')">Remover</button>
 `:'<span style="opacity:.3;font-size:11px">👑 Admin</span>'}
       </tr>
