@@ -7,6 +7,8 @@ const { MongoClient } = require('mongodb');
 const path = require('path');
 const fs = require('fs');
 
+console.log('MONGO_URL:', process.env.MONGO_URL ? 'definida' : 'INDEFINIDA');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'mih-gg-secret-2026';
