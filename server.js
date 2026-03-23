@@ -4,10 +4,15 @@ const cors = require('cors');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const { MongoClient } = require('mongodb');
+const { createClient } = require('redis');
 const path = require('path');
 const fs = require('fs');
 
 console.log('MONGO_URL:', process.env.MONGO_URL ? 'definida' : 'INDEFINIDA');
+
+const redisClient = createClient({ url: process.env.REDIS_URL });
+redisClient.on('error', (err) => console.error('Redis error:', err));
+redisClient.connect().then(() => console.log('Redis conectado')).catch((err) => console.error('Redis connect error:', err));
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -122,6 +127,16 @@ app.get('/api/schedule', async (req, res) => { const s = await db.collection('sc
 app.post('/api/admin/schedule', adminMiddleware, async (req, res) => { const { day, time, icon, name, desc, game } = req.body; await db.collection('schedule').insertOne({ day, time, icon: icon||'🎮', name, desc, game: game||'Geral' }); const s = await db.collection('schedule').find({}).sort({ day: 1 }).toArray(); res.status(201).json(s.map(({ _id, ...x }) => x)); });
 
 app.delete('/api/admin/schedule/:day', adminMiddleware, async (req, res) => { await db.collection('schedule').deleteOne({ day: parseInt(req.params.day) }); res.json({ message: 'Removido' }); });
+
+app.get('/delete-redis-key-a', async (req, res) => {
+  try {
+    const deleted = await redisClient.del('a');
+    res.json({ success: true, deleted, message: `Chave "a" ${deleted ? 'deletada' : 'não encontrada'}` });
+  } catch (err) {
+    console.error('Erro:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
